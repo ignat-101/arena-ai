@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Premium FunPay • AI & Base Auto-Pay Дашборд</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        baseblue: '#0052FF',
+                        darkbg: '#0F172A',
+                        cardbg: '#1E293B',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen font-sans">
+
+    <!-- Навигация -->
+    <header class="border-b border-slate-800 bg-cardbg/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-baseblue p-2 rounded-lg text-white font-bold">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">X Premium FunPay Automation <span class="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full ml-1">v2.0</span></h1>
+                    <p class="text-xs text-slate-400">Авто-оплата в сети Base • OpenRouter AI Ассистент • Telegram Bot</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Base On-Chain Active
+                </span>
+                <button onclick="refreshAll()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Обновить</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <!-- Карточки финансовой статистики и KPI -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="stats-grid">
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-5 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Всего сделок</p>
+                        <h3 class="text-2xl font-bold mt-1" id="stat-total-orders">0</h3>
+                    </div>
+                    <div class="p-2.5 bg-blue-500/10 rounded-lg text-blue-400">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-emerald-400 mt-2 flex items-center">
+                    <i class="fa-solid fa-check mr-1"></i> Завершено: <span id="stat-completed-orders" class="ml-1 font-semibold">0</span>
+                </p>
+            </div>
+
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-5 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Транзакции в Base</p>
+                        <h3 class="text-2xl font-bold mt-1" id="stat-onchain-tx">0</h3>
+                    </div>
+                    <div class="p-2.5 bg-indigo-500/10 rounded-lg text-indigo-400">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-indigo-400 mt-2">
+                    EVM Chain ID 8453
+                </p>
+            </div>
+
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-5 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Общий оборот</p>
+                        <h3 class="text-2xl font-bold mt-1">$<span id="stat-volume">0.00</span></h3>
+                    </div>
+                    <div class="p-2.5 bg-emerald-500/10 rounded-lg text-emerald-400">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">
+                    Оплата в ETH/USDC
+                </p>
+            </div>
+
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-5 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Чистая прибыль</p>
+                        <h3 class="text-2xl font-bold mt-1 text-emerald-400">$<span id="stat-profit">0.00</span></h3>
+                    </div>
+                    <div class="p-2.5 bg-amber-500/10 rounded-lg text-amber-400">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">
+                    Средняя маржа $3.50/заказ
+                </p>
+            </div>
+        </div>
+
+        <!-- Секция тестирования: Создание тестового заказа и Симулятор чата FunPay -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Создание тестового заказа -->
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
+                        <i class="fa-solid fa-flask text-baseblue text-lg"></i>
+                        <h2 class="text-base font-semibold">1. Симулятор заказа (X.com & Base Auto-Pay)</h2>
+                    </div>
+                    <p class="text-sm text-slate-400 mt-3">
+                        Создайте тестовый заказ для немедленной проверки авто-авторизации в X.com и оплаты в блокчейне Base:
+                    </p>
+                    <form id="order-form" onsubmit="submitTestOrder(event)" class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Логин X.com (Email / Username)</label>
+                            <input type="text" id="login-input" value="crypto_buyer@gmail.com" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-baseblue">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Пароль</label>
+                            <input type="password" id="password-input" value="SuperSecretPassword2026" required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-baseblue">
+                        </div>
+                        <div class="flex items-center space-x-2 pt-1">
+                            <input type="checkbox" id="require-2fa-input" checked
+                                class="w-4 h-4 rounded border-slate-700 text-baseblue focus:ring-baseblue bg-slate-900">
+                            <label for="require-2fa-input" class="text-sm text-slate-300">
+                                Имитировать запрос 2FA (для теста ввода кода подтверждения)
+                            </label>
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-baseblue hover:bg-blue-600 text-white font-medium py-2.5 rounded-lg text-sm transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-rocket"></i>
+                            <span>Запустить авто-оплату в Base</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div id="test-order-feedback" class="mt-4 hidden p-3 rounded-lg text-sm bg-slate-900/80 border border-slate-700"></div>
+            </div>
+
+            <!-- Симулятор чата FunPay с AI-ассистентом -->
+            <div class="bg-cardbg border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col h-[420px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-comments text-amber-400 text-lg"></i>
+                        <h2 class="text-base font-semibold">2. Интерактивный чат FunPay & OpenRouter AI</h2>
+                    </div>
+                    <span class="text-xs text-slate-400">Выберите заказ ниже для чата</span>
+                </div>
+
+                <!-- Выбор чата/заказа для отправки сообщений -->
+                <div class="mt-3">
+                    <select id="chat-order-select" onchange="loadChatHistory()"
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-baseblue">
+                        <option value="">-- Выберите активный заказ для общения --</option>
+                    </select>
+                </div>
+
+                <!-- Лог сообщений чата -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto my-3 space-y-2 pr-1 border border-slate-800/60 rounded-lg p-3 bg-slate-900/50 text-xs">
+                    <div class="text-center text-slate-500 italic py-10">
+                        Создайте заказ или выберите запись, чтобы общаться с AI-ассистентом или отправить 2FA-код.
+                    </div>
+                </div>
+
+                <!-- Поле ввода сообщения покупателя / 2FA кода -->
+                <form onsubmit="sendChatMessage(event)" class="flex space-x-2 mt-auto">
+                    <input type="text" id="chat-input-text" placeholder="Спросите «Сколько длится подписка?» или введите код «839201»..."
+                        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-baseblue">
+                    <button type="submit"
+                        class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs transition flex items-center space-x-1">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Отправить</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Таблица заказов и лог ончейн-транзакций в Base -->
+        <div class="bg-cardbg border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check text-indigo-400 text-lg"></i>
+                    <h2 class="text-base font-semibold">История сделок и ончейн-транзакции в сети Base</h2>
+                </div>
+                <span class="text-xs text-slate-400">Автообновление каждые 5 сек</span>
+            </div>
+
+            <div class="overflow-x-auto mt-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-xs font-medium text-slate-400 uppercase border-b border-slate-800">
+                            <th class="py-3 px-4">ID Заказа</th>
+                            <th class="py-3 px-4">Покупатель / Логин</th>
+                            <th class="py-3 px-4">Статус</th>
+                            <th class="py-3 px-4">Base Tx Hash (0x...)</th>
+                            <th class="py-3 px-4">Сумма / Прибыль</th>
+                            <th class="py-3 px-4 text-right">Управление</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body" class="divide-y divide-slate-800 text-sm">
+                        <!-- Динамическое наполнение -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-12">
+        &copy; 2026 X Premium FunPay Automation v2.0 • Powered by Playwright, OpenRouter AI & Base Blockchain.
+    </footer>
+
+    <script>
+        let currentOrders = [];
+
+        async function refreshAll() {
+            await fetchStats();
+            await fetchOrders();
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('stat-total-orders').innerText = data.total_orders || 0;
+                document.getElementById('stat-completed-orders').innerText = data.completed_orders || 0;
+                document.getElementById('stat-onchain-tx').innerText = data.onchain_tx_count || 0;
+                document.getElementById('stat-volume').innerText = (data.total_usd_volume || 0).toFixed(2);
+                document.getElementById('stat-profit').innerText = (data.total_profit_usd || 0).toFixed(2);
+            } catch (err) {
+                console.error("Ошибка загрузки статистики:", err);
+            }
+        }
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const orders = await res.json();
+                currentOrders = orders;
+                renderOrdersTable(orders);
+                updateChatSelect(orders);
+            } catch (err) {
+                console.error("Ошибка загрузки заказов:", err);
+            }
+        }
+
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('orders-table-body');
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">Заказов пока нет. Запустите симулятор!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => {
+                let badgeClass = "bg-slate-500/20 text-slate-400";
+                if (o.status === "completed") badgeClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                else if (o.status === "waiting_2fa") badgeClass = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                else if (o.status === "paying_on_chain") badgeClass = "bg-blue-500/20 text-blue-400 border border-blue-500/30 animate-pulse";
+                else if (o.status === "error") badgeClass = "bg-rose-500/20 text-rose-400 border border-rose-500/30";
+
+                const txDisplay = o.tx_hash ? `<span class="font-mono text-xs text-indigo-400">${o.tx_hash.slice(0, 10)}...${o.tx_hash.slice(-6)}</span>` : `<span class="text-slate-600">—</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 font-mono font-medium text-slate-300">${o.order_id}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium">${o.buyer_username}</div>
+                            <div class="text-xs text-slate-400">${o.login}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                                ${o.status}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">${txDisplay}</td>
+                        <td class="py-3 px-4">
+                            <div class="text-slate-200 font-medium">${o.amount_crypto || '0.0035 ETH'}</div>
+                            <div class="text-xs text-emerald-400">+${(o.profit_usd || 0).toFixed(2)} USD</div>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-1">
+                            <button onclick="selectOrderForChat('${o.order_id}')" title="Открыть чат" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300">
+                                <i class="fa-solid fa-comments"></i>
+                            </button>
+                            ${o.status !== 'completed' ? `
+                            <button onclick="confirmOrder('${o.order_id}')" title="Завершить / Авто-оплата" class="p-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded">
+                                <i class="fa-solid fa-check"></i>
+                            </button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateChatSelect(orders) {
+            const select = document.getElementById('chat-order-select');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Выберите активный заказ для общения --</option>' +
+                orders.map(o => `<option value="${o.order_id}" ${o.order_id === currentVal ? 'selected' : ''}>[${o.status}] ${o.order_id} (${o.login})</option>`).join('');
+            
+            if (currentVal) {
+                loadChatHistory();
+            } else if (orders.length > 0 && !currentVal) {
+                select.value = orders[0].order_id;
+                loadChatHistory();
+            }
+        }
+
+        function selectOrderForChat(orderId) {
+            const select = document.getElementById('chat-order-select');
+            select.value = orderId;
+            loadChatHistory();
+            document.getElementById('chat-input-text').focus();
+        }
+
+        function loadChatHistory() {
+            const select = document.getElementById('chat-order-select');
+            const orderId = select.value;
+            const chatDiv = document.getElementById('chat-messages');
+
+            if (!orderId) {
+                chatDiv.innerHTML = `<div class="text-center text-slate-500 italic py-10">Выберите заказ выше, чтобы видеть историю сообщений</div>`;
+                return;
+            }
+
+            const order = currentOrders.find(o => o.order_id === orderId);
+            if (!order || !order.chat_history || order.chat_history.length === 0) {
+                chatDiv.innerHTML = `<div class="text-center text-slate-500 italic py-10">История сообщений пуста. Напишите сообщение ниже!</div>`;
+                return;
+            }
+
+            chatDiv.innerHTML = order.chat_history.map(m => {
+                const isAi = m.role === "ai";
+                const isSys = m.role === "system";
+                if (isSys) {
+                    return `<div class="text-center my-1"><span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded text-[11px]">${m.text}</span></div>`;
+                }
+                const align = isAi ? "justify-start" : "justify-end";
+                const bg = isAi ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-baseblue/30 border-blue-500/30 text-blue-100";
+                const author = isAi ? "<i class='fa-solid fa-robot text-amber-400 mr-1'></i> AI Ассистент" : "<i class='fa-solid fa-user mr-1'></i> Покупатель FunPay";
+
+                return `
+                    <div class="flex ${align} my-1.5">
+                        <div class="max-w-[85%] border rounded-lg p-2.5 ${bg}">
+                            <div class="text-[10px] font-semibold opacity-75 mb-1">${author}</div>
+                            <div class="text-xs">${m.text}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        async function submitTestOrder(e) {
+            e.preventDefault();
+            const login = document.getElementById('login-input').value;
+            const password = document.getElementById('password-input').value;
+            const require2fa = document.getElementById('require-2fa-input').checked;
+            const feedback = document.getElementById('test-order-feedback');
+
+            feedback.classList.remove('hidden');
+            feedback.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1 text-baseblue"></i> Запускаем симуляцию заказа в X.com...`;
+
+            try {
+                const res = await fetch('/api/test_order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login, password, require_2fa: require2fa })
+                });
+                const data = await res.json();
+                feedback.innerHTML = `<span class="text-emerald-400"><i class="fa-solid fa-check mr-1"></i> ${data.message}</span>`;
+                await refreshAll();
+            } catch (err) {
+                feedback.innerHTML = `<span class="text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Ошибка при создании заказа</span>`;
+            }
+        }
+
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input-text');
+            const select = document.getElementById('chat-order-select');
+            const orderId = select.value;
+            const text = input.value.trim();
+
+            if (!orderId) {
+                alert("Пожалуйста, выберите активный заказ из списка!");
+                return;
+            }
+            if (!text) return;
+
+            input.value = "";
+            try {
+                await fetch('/api/chat_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId, text })
+                });
+                await refreshAll();
+            } catch (err) {
+                console.error("Ошибка отправки сообщения:", err);
+            }
+        }
+
+        async function confirmOrder(orderId) {
+            try {
+                await fetch('/api/confirm_payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId })
+                });
+                await refreshAll();
+            } catch (err) {
+                console.error("Ошибка подтверждения заказа:", err);
+            }
+        }
+
+        // Автоматическое обновление данных
+        setInterval(refreshAll, 5000);
+        window.addEventListener('DOMContentLoaded', refreshAll);
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Telegram Bot API (aiogram v3)
+aiogram>=3.4.0
+
+# Async HTTP, AI (OpenRouter) & parsing
+aiohttp>=3.9.0
+beautifulsoup4>=4.12.0
+
+# Browser automation
+playwright>=1.42.0
+
+# Data validation & configuration
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.0
+
+# QR code generation & image processing
+qrcode>=7.4.2
+pillow>=10.2.0
+
+# Logging & formatting
+colorlog>=6.8.0
+
+# On-chain Base Blockchain Crypto Payment Engine
+web3>=6.15.0
+eth-account>=0.11.0
+
+# Web Dashboard & Testing UI
+fastapi>=0.110.0
+uvicorn>=0.28.0
+jinja2>=3.1.3

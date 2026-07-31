@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  x-premium-automation:
+    build: .
+    container_name: x_premium_funpay_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./screenshots:/app/screenshots
+    environment:
+      - TZ=UTC
+      - PYTHONUNBUFFERED=1
+    command: ["run"]

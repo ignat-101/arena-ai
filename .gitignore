@@ -1,0 +1,31 @@
+# Environments & virtualenvs
+.venv/
+venv/
+env/
+*.env
+!.env.example
+
+# Python cache & logs
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+logs/
+
+# Database & runtime data
+data/*.db
+data/*.sqlite
+data/*.json
+!data/.gitkeep
+
+# Playwright & browser artifacts
+screenshots/
+traces/
+*.png
+*.jpg
+*.jpeg
+
+# IDEs
+.idea/
+.vscode/
+*.swp
