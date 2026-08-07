@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TON Trace — Админ-панель</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f8cff'/%3E%3Ctext x='16' y='22' font-size='16' font-weight='bold' fill='white' text-anchor='middle' font-family='sans-serif'%3ET%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="admin-body">
+
+  <!-- АУТЕНТИФИКАЦИЯ -->
+  <div id="authView" style="display:none;">
+    <div class="auth-card" id="loginCard">
+      <h2>🔐 Админ-панель</h2>
+      <p>TON Trace — управление сущностями, кодами доступа и AML-кейсами.</p>
+      <form id="loginForm">
+        <div class="form-group"><label>Логин</label><input id="loginUser" autocomplete="username" required /></div>
+        <div class="form-group"><label>Пароль</label><input id="loginPass" type="password" autocomplete="current-password" required /></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Войти</button>
+      </form>
+      <div class="auth-switch">Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться по коду</a></div>
+    </div>
+
+    <div class="auth-card" id="registerCard" style="display:none;">
+      <h2>🔑 Регистрация</h2>
+      <p>Введите код доступа (выдаётся суперадмином) или мастер-код и создайте аккаунт.</p>
+      <form id="registerForm">
+        <div class="form-group"><label>Код доступа</label><input id="regCode" required /></div>
+        <div class="form-group"><label>Логин</label><input id="regUser" autocomplete="username" required /></div>
+        <div class="form-group"><label>Пароль (мин. 6 символов)</label><input id="regPass" type="password" autocomplete="new-password" required /></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Создать аккаунт</button>
+      </form>
+      <div class="auth-switch">Уже есть аккаунт? <a href="#" id="showLogin">Войти</a></div>
+    </div>
+  </div>
+
+  <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+  <div id="adminMain" style="display:none;">
+    <header class="header" style="position:sticky;top:0;z-index:10;">
+      <div class="logo">
+        <div class="logo-icon">T</div>
+        <div>
+          <div class="logo-name">TON Trace · Админка</div>
+          <div class="logo-sub" id="whoami">—</div>
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <a href="/" class="btn btn-ghost btn-sm">← Виджет</a>
+        <button class="btn btn-sm btn-danger" id="logoutBtn">Выйти</button>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <div class="admin-title">AML-база и управление</div>
+      <div class="admin-sub">Сущности (биржи, сервисы, подозрительные адреса), коды доступа для админов, AML-кейсы и журнал действий.</div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="entities">Сущности</button>
+        <button class="admin-tab" data-tab="import">Импорт из TonAPI</button>
+        <button class="admin-tab" data-tab="codes">Коды доступа</button>
+        <button class="admin-tab" data-tab="admins">Админы</button>
+        <button class="admin-tab" data-tab="cases">AML-кейсы</button>
+        <button class="admin-tab" data-tab="audit">Журнал</button>
+      </div>
+
+      <!-- СУЩНОСТИ -->
+      <div class="admin-pane active" id="pane-entities">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="addEntityBtn">+ Добавить сущность</button>
+          <span style="font-size:12px;color:var(--text-faint);align-self:center;">Всего: <b id="entityCount">0</b></span>
+        </div>
+        <table class="table" id="entitiesTable">
+          <thead><tr><th>Название</th><th>Тип</th><th>Риск</th><th>Статус</th><th>Адресов</th><th>Теги</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- ИМПОРТ -->
+      <div class="admin-pane" id="pane-import">
+        <div style="display:flex;gap:8px;max-width:520px;margin-bottom:12px;">
+          <input id="importName" class="search-input" style="flex:1;" placeholder="Название, например: kucoin" />
+          <button class="btn btn-primary" id="importSearchBtn">Найти</button>
+        </div>
+        <div id="importResults" style="font-size:12.5px;color:var(--text-faint);">Найдите адреса в TonAPI (whitelist = проверенные TonAPI биржи/сервисы) и импортируйте в свою базу.</div>
+        <div id="importList"></div>
+        <button class="btn btn-primary" id="importBulkBtn" style="display:none;margin-top:8px;">Импортировать выбранные (N)</button>
+      </div>
+
+      <!-- КОДЫ -->
+      <div class="admin-pane" id="pane-codes">
+        <div class="form-grid" style="max-width:640px;margin-bottom:14px;">
+          <div class="form-group"><label>Роль нового админа</label>
+            <select id="inviteRole"><option value="admin">Админ (сущности, кейсы)</option><option value="analyst">Аналитик (просмотр)</option></select>
+          </div>
+          <div class="form-group"><label>Сколько использований</label><input id="inviteUses" type="number" min="1" value="1" /></div>
+          <div class="form-group"><label>Срок (часов, пусто = бессрочно)</label><input id="inviteHours" type="number" min="1" placeholder="напр. 168" /></div>
+          <div class="form-group"><label>Комментарий</label><input id="inviteNote" placeholder="для кого" /></div>
+        </div>
+        <button class="btn btn-primary" id="inviteBtn" style="margin-bottom:16px;">Сгенерировать код</button>
+        <table class="table" id="codesTable">
+          <thead><tr><th>Код</th><th>Роль</th><th>Использован</th><th>Истекает</th><th>Комментарий</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- АДМИНЫ -->
+      <div class="admin-pane" id="pane-admins">
+        <table class="table" id="adminsTable">
+          <thead><tr><th>Логин</th><th>Роль</th><th>Создан</th><th>Кем</th><th>Действие</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- КЕЙСЫ -->
+      <div class="admin-pane" id="pane-cases">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <select class="tool-select" id="caseFilter">
+            <option value="">Все статусы</option>
+            <option value="open">Открыт</option>
+            <option value="investigating">В работе</option>
+            <option value="resolved">Решён</option>
+            <option value="closed">Закрыт</option>
+          </select>
+        </div>
+        <table class="table" id="casesTable">
+          <thead><tr><th>Адрес</th><th>Оценка</th><th>Статус</th><th>Сводка</th><th>Создан</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- АУДИТ -->
+      <div class="admin-pane" id="pane-audit">
+        <table class="table" id="auditTable">
+          <thead><tr><th>Время</th><th>Админ</th><th>Действие</th><th>Детали</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА СУЩНОСТИ -->
+  <div class="modal-overlay" id="entityModal">
+    <div class="modal" style="width:min(680px,94vw);">
+      <div class="modal-head">
+        <span class="modal-title" id="entityModalTitle">Сущность</span>
+        <button class="modal-close" data-close="entityModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group"><label>Название *</label><input id="fName" placeholder="Binance" /></div>
+          <div class="form-group"><label>Тип</label>
+            <select id="fType">
+              <option value="exchange">Биржа (exchange)</option>
+              <option value="defi">DeFi</option>
+              <option value="bridge">Мост (bridge)</option>
+              <option value="mixer">Миксер</option>
+              <option value="payment">Платёжный сервис</option>
+              <option value="gambling">Гемблинг</option>
+              <option value="whale">Кит</option>
+              <option value="scam">Скам</option>
+              <option value="fraud">Мошенничество</option>
+              <option value="phishing">Фишинг</option>
+              <option value="suspicious">Подозрительный</option>
+              <option value="high_risk">Высокий риск</option>
+              <option value="service">Сервис</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Риск (0-100)</label><input id="fRisk" type="number" min="0" max="100" value="0" /></div>
+          <div class="form-group"><label>Статус</label>
+            <select id="fStatus">
+              <option value="active">Активна</option>
+              <option value="monitored">Мониторинг</option>
+              <option value="blocked">Заблокирована</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Цвет (hex)</label><input id="fColor" placeholder="#8e6cf5" /></div>
+          <div class="form-group"><label>Логотип URL</label><input id="fLogo" placeholder="https://…" /></div>
+          <div class="form-group"><label>Теги (через запятую)</label><input id="fTags" placeholder="exchange, kex" /></div>
+          <div class="form-group full"><label>Описание</label><textarea id="fDesc" placeholder="Что это за сущность, почему добавлена"></textarea></div>
+          <div class="form-group full">
+            <label>Адреса (по одному в строке)</label>
+            <textarea id="fAddresses" placeholder="UQ…&#10;0:…&#10;или через запятую" style="min-height:90px;"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close="entityModal">Отмена</button>
+        <button class="btn btn-danger" id="deleteEntityBtn" style="display:none;">Удалить</button>
+        <button class="btn btn-primary" id="saveEntityBtn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

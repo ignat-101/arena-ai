@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TON Trace — визуализатор транзакций и AML-аналитика</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f8cff'/%3E%3Ctext x='16' y='22' font-size='16' font-weight='bold' fill='white' text-anchor='middle' font-family='sans-serif'%3ET%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">T</div>
+      <div>
+        <div class="logo-name">TON&nbsp;Trace</div>
+        <div class="logo-sub">визуализатор транзакций · AML</div>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <div class="search-row">
+        <input id="addressInput" class="search-input" type="text"
+               placeholder="Адрес кошелька TON или имя .ton (например UQCfdyr… или 7288.ton)"
+               autocomplete="off" spellcheck="false" />
+        <button id="searchBtn" class="btn btn-primary">Показать</button>
+      </div>
+      <div id="autocomplete" class="autocomplete"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span id="dataSourcePill" class="status-pill"><span class="dot gray"></span><span>проверка источника…</span></span>
+      <a href="/admin.html" class="btn btn-ghost btn-sm" title="Админ-панель: сущности, коды доступа, AML-кейсы">⚙️ Админка</a>
+    </div>
+  </header>
+
+  <div class="toolbar" id="toolbar">
+    <span class="tool-label">Период</span>
+    <div class="seg-group" id="periodGroup"></div>
+
+    <span class="tool-label" style="margin-left:8px;">Мин. сумма</span>
+    <input id="minAmount" class="tool-input" type="number" min="0" step="0.01" value="0" placeholder="0 TON" />
+    <span class="tool-label">Направление</span>
+    <select id="direction" class="tool-select">
+      <option value="all">Все</option>
+      <option value="in">Входящие</option>
+      <option value="out">Исходящие</option>
+    </select>
+    <span class="tool-label">Активы</span>
+    <select id="assetFilter" class="tool-select">
+      <option value="all">Все</option>
+      <option value="ton">Только TON</option>
+      <option value="jetton">Только жетоны</option>
+    </select>
+
+    <div class="spacer"></div>
+    <button id="refreshBtn" class="btn btn-sm" title="Обновить данные">⟳ Обновить</button>
+    <button id="shareBtn" class="btn btn-sm" title="Скопировать ссылку на этот граф">🔗 Поделиться</button>
+    <button id="csvBtn" class="btn btn-sm" title="Выгрузить транзакции в CSV">⬇ CSV</button>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div style="font-size:11.5px;color:var(--text-faint);margin-top:5px;" id="progressText">Загрузка…</div>
+  </div>
+
+  <div class="main">
+    <div class="graph-wrap" id="graphWrap">
+      <canvas id="graphCanvas"></canvas>
+      <div id="emptyState" class="empty-state">
+        <div class="big">🌐</div>
+        <h2>Граф связей кошелька</h2>
+        <p>Введите адрес кошелька TON выше — мы построим граф его транзакций: контрагенты, объёмы, направления и AML-риски. Клик по узлу — детали, двойной клик — переход к адресу.</p>
+        <button id="demoBtn" class="btn btn-sm" style="margin-top:6px;">▶ Посмотреть демо (без TonAPI)</button>
+      </div>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-dot" style="background:#4f8cff;"></span> Искомый кошелёк</div>
+        <div class="legend-row"><span class="legend-dot" style="background:#3a4a66;"></span> Адрес-контрагент</div>
+        <div class="legend-row"><span class="legend-dot" style="background:#8e6cf5;"></span> Сущность (биржа и т.п.)</div>
+        <div class="legend-row"><span class="legend-dot" style="background:#f53423;"></span> Высокий риск</div>
+        <div class="legend-row"><span class="legend-line" style="border-color:#3ddc84;"></span> Входящий перевод</div>
+        <div class="legend-row"><span class="legend-line" style="border-color:#ff9f43;"></span> Исходящий перевод</div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomInBtn" title="Приблизить">+</button>
+        <button class="zoom-btn" id="zoomOutBtn" title="Отдалить">−</button>
+        <button class="zoom-btn" id="fitBtn" title="Вписать граф" style="font-size:12px;">⤢</button>
+      </div>
+      <div class="graph-hint">колесо — зум · перетаскивание — панорама · клик по узлу — детали · двойной клик — открыть адрес</div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="info">Инфо</button>
+        <button class="tab-btn" data-tab="tx">Транзакции</button>
+        <button class="tab-btn" data-tab="aml">AML</button>
+      </div>
+
+      <div class="tab-pane active" id="pane-info">
+        <div id="nodeDetail"></div>
+      </div>
+
+      <div class="tab-pane" id="pane-tx">
+        <div id="txList" class="tx-list"></div>
+        <button id="loadMoreBtn" class="btn load-more" style="display:none;">Загрузить ещё</button>
+      </div>
+
+      <div class="tab-pane" id="pane-aml">
+        <div id="amlPane"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="tooltip" class="graph-tooltip"></div>
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- Модалка транзакции -->
+  <div class="modal-overlay" id="txModal">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-title">Детали операции</span>
+        <button class="modal-close" data-close="txModal">✕</button>
+      </div>
+      <div class="modal-body" id="txModalBody"></div>
+      <div class="modal-foot">
+        <button class="btn btn-sm" data-close="txModal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

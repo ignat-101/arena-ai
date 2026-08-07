@@ -1,0 +1,95 @@
+{
+  "comment": "Сущности проверены через TonAPI (trust: whitelist, /v2/accounts/search). Адреса — реальные кошельки бирж.",
+  "entities": [
+    {
+      "name": "Binance",
+      "type": "exchange",
+      "risk_level": 5,
+      "status": "active",
+      "description": "Крупнейшая криптобиржа. Адреса из whitelist TonAPI (Binance, Binance Hot Wallet).",
+      "tags": ["exchange", "kex", "binance", "cex"],
+      "source": "tonapi-whitelist",
+      "color": "#f0b90b",
+      "addresses": [
+        {"address": "0:f99b14600ae44d2f12b178e8c6eabd78892ae82c5e45b6898f9deb7eb203f9c4", "note": "Binance (whitelist)"},
+        {"address": "0:8e91b50381c36dd42accdb51f5cb5d96848568b4924f8079b1a5ae7e10f43eda", "note": "Binance Hot Wallet"},
+        {"address": "0:ca1d9edeef40b3a9dbd9082f3767859547c3ce0bf641d09d58e33a3cf06fb309", "note": "Binance Hot Wallet"}
+      ]
+    },
+    {
+      "name": "Bybit",
+      "type": "exchange",
+      "risk_level": 5,
+      "status": "active",
+      "description": "Криптобиржа Bybit. Адреса Bybit 1-10 из whitelist TonAPI.",
+      "tags": ["exchange", "kex", "bybit", "cex"],
+      "source": "tonapi-whitelist",
+      "color": "#f7a600",
+      "addresses": [
+        {"address": "0:c3f1da8ecda8f8cd42bace224ea3f1b6971eaa7f54c492d4d190527b4f573f7c", "note": "Bybit 1"},
+        {"address": "0:7f97f36dda3f7dedc9e12f8c09c4f89e7fbc17527ab3f67de4c3b155297a56e4", "note": "Bybit 7"},
+        {"address": "0:ae62a192da96e266161a702cc9f6de91c0c3441f17ceba51bc442dfb2031a30a", "note": "Bybit 4"},
+        {"address": "0:e33ef85d174eb457c072d1ee10215b69ab9b64192f7421302ab1c8e26b7ad4bd", "note": "Bybit 6"},
+        {"address": "0:7d133d4e425c8e00de015513a44e66e6d163b21e71720aec7579965e5de28c55", "note": "Bybit 8"},
+        {"address": "0:cd525c15904d7b4027eae08b318624260f371ce8c9f4fcca0cdb7b583854107c", "note": "Bybit 3"},
+        {"address": "0:e3ce05c4da977132c24a3b102da8b5fbf2ea9173337b49de346e4a4b057f7579", "note": "Bybit 5"},
+        {"address": "0:f2dc1860686cd658987e2bed8216532d8c004460dadea907cc7d4ad7236c496b", "note": "Bybit 9"},
+        {"address": "0:4a1f3ebcc66bdcefa90245bdf541a50ada1c688a487534b1587abffd93038834", "note": "Bybit 2"},
+        {"address": "0:4a1c20bc9a6f9294f75f1c87a7f383a8b73a483a2e6dcb3630ddbe78b3ccad00", "note": "Bybit 10"}
+      ]
+    },
+    {
+      "name": "OKX",
+      "type": "exchange",
+      "risk_level": 5,
+      "status": "active",
+      "description": "Криптобиржа OKX. Адреса OKX 1-12 из whitelist TonAPI.",
+      "tags": ["exchange", "kex", "okx", "cex"],
+      "source": "tonapi-whitelist",
+      "color": "#50b7ff",
+      "addresses": [
+        {"address": "0:7f2e84c723d8b6b6b1aacf810c8c26ab23c22022b464b87104b2d3065b0ea70b", "note": "OKX 7"},
+        {"address": "0:24da1e7b8da901e5b3dd0f98c397feb6e5a5ea483195a8b6bd0682cf2c5327ae", "note": "OKX 6"},
+        {"address": "0:f15db2c62cd86aff0860d39c491fc73a31395fafeb5945e644498562260c782e", "note": "OKX 2"},
+        {"address": "0:854ec4521efd52ad43bcf1988e4c44ebdf9a26ad18fa51abfdb685fc3b348a5c", "note": "OKX 8"},
+        {"address": "0:a30a49ec725e9f57244b66af4c2da7ab76004b4fce80d3a34b1cd0c37762abce", "note": "OKX 5"},
+        {"address": "0:0338def34b84c6ee9134a04ab1601450be446340a37ae259de57cb37bdb590cd", "note": "OKX 4"},
+        {"address": "0:5f00decb7da51881764dc3959cec60609045f6ca1b89e646bde49d492705d77f", "note": "OKX 1"},
+        {"address": "0:f9bdc0de461c1a2e002fada9550bbb095c8f9f73668d70c517a9cc7e050f8e5a", "note": "OKX 9"},
+        {"address": "0:e7e86da08742ed933434ffeb8f08a63c7e100ee842e25f599a9cbf0891574a6c", "note": "OKX 3"},
+        {"address": "0:9b9b739de2527ae72d21083f5198d710c7288453b4733e57ecadb2e189ac829c", "note": "OKX 10"},
+        {"address": "0:6c25b5f2fe5ef1a6a1978f611f61a50883fd50a0822b19176445fca931823263", "note": "OKX 12"},
+        {"address": "0:66a1e72196d64d6faf48fa4b2ea861f67b0484d2d14a59caf701d8c286ce44e5", "note": "OKX 11"}
+      ]
+    },
+    {
+      "name": "Bybit (домен-клон)",
+      "type": "suspicious",
+      "risk_level": 70,
+      "status": "monitored",
+      "description": "bybit.ton и похожие домены: не входят в whitelist TonAPI (trust: none). Часто используются для фишинга.",
+      "tags": ["lookalike", "phishing", "domain-clone"],
+      "source": "tonapi-whitelist",
+      "color": "#f53423",
+      "addresses": [
+        {"address": "0:d782461baf10e94590fa3d465dd23c1d8d999861077b97960e13651e5ee9cb0f", "note": "bybit.ton (trust: none)"},
+        {"address": "0:f0aca9285040602b8467ac28616d6d1dd8c9853a019d82a681dfb9d67e43a47c", "note": "bybit1.ton (trust: none)"},
+        {"address": "0:ae9eee657f2ca66fa8b5a35b56eda7b4694b6516339c0f879b25b80821c545ca", "note": "bybitdex.ton (trust: none)"}
+      ]
+    },
+    {
+      "name": "Binance (домен-клон)",
+      "type": "suspicious",
+      "risk_level": 70,
+      "status": "monitored",
+      "description": "Домены, имитирующие Binance (binance12.ton, binance-1.ton и т.п.): не в whitelist TonAPI, типичные фишинговые клоны.",
+      "tags": ["lookalike", "phishing", "domain-clone"],
+      "source": "tonapi-whitelist",
+      "color": "#f53423",
+      "addresses": [
+        {"address": "0:9c941d486f6af177766972cadd12b4679f03126e9f4aef1dd9e2146f0efa41d8", "note": "binance12.ton (trust: none)"},
+        {"address": "0:1247810279a1b057fbd5ca4b6d3995f7e792c30f1279cee3deceb75f98a8fce9", "note": "binance-1.ton (trust: none)"}
+      ]
+    }
+  ]
+}
