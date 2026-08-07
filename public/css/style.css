@@ -402,3 +402,29 @@ input, select, textarea { font-family: var(--font); }
   .legend { display: none; }
   .form-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------- tx popup modal ---------- */
+.modal-tx { width: min(640px, 94vw); }
+.tx-modal-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(79,140,255,.07), transparent);
+  border-radius: 14px 14px 0 0;
+}
+.participant-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px 12px;
+}
+.participant-row .p-badge {
+  flex: none; font-size: 10px; font-weight: 800;
+  padding: 3px 9px; border-radius: 7px; margin-top: 2px;
+  letter-spacing: .3px;
+}
+.participant-row .addr-big { font-size: 10.5px; line-height: 1.45; margin-top: 3px; }
+.participant-row .copy { cursor: pointer; color: var(--accent); }
+.participant-row .btn { align-self: center; }
+
+/* модалка узла: компактные заголовки */
+#nodeModalBody .stat-grid { margin-bottom: 4px; }
+#nodeModalBody .section-title { margin-top: 12px; }

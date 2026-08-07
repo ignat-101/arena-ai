@@ -64,6 +64,27 @@ try {
   check('кнопки периодов отрисованы', document.querySelectorAll('#periodGroup .seg-btn').length === 7);
   check('пилюля источника данных обновилась', /TonAPI|сервер|недоступен/.test(document.querySelector('#dataSourcePill').textContent));
 
+  // тест PDF-эндпоинта (до демо, т.к. fetch из jsdom валиден)
+  try {
+    const pdfRes = await realFetch('http://localhost:8080/api/report/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: { friendly: 'UQCfdyrb0Fj8lA32OfizTwGY829tTzihsEYl1FrpBzeVKdi0', raw: '0:9f772adbd058fc940df639f8b34f0198f36f6d4f38a1b04625d45ae907379529', name: '7288.ton', balance: 10339806878, is_wallet: true },
+        risk: { score: 38, level: 'medium', level_label: 'Средний', signals: [{ title: 'Тест', severity: 60, detail: '' }] },
+        stats: { in_value: 63200000000, out_value: 12900000000, tx_count: 7, unique_counterparties: 6 },
+        counterparties: [{ name: 'Bybit 1', address: '0:1111111111111111111111111111111111111111111111111111111111111111', in_value: 15000000000, out_value: 0, in_count: 1, out_count: 0 }],
+        transactions: [{ timestamp: 1785700000, dir: 'in', type: 'TonTransfer', description: 'Депозит', value: '15 TON', counterparty: 'Bybit 1', event_id: 'abc' }],
+      }),
+    });
+    const buf = Buffer.from(await pdfRes.arrayBuffer());
+    check('PDF эндпоинт: 200', pdfRes.status === 200, String(pdfRes.status));
+    check('PDF эндпоинт: %PDF magic', buf.slice(0, 5).toString() === '%PDF-', buf.length + ' bytes');
+  } catch (e) {
+    results.push({ name: 'PDF эндпоинт', ok: false, extra: e.message });
+    console.log('FAIL  PDF эндпоинт — ' + e.message);
+  }
+
   // демо-режим
   const demoBtn = document.getElementById('demoBtn');
   demoBtn.click();
@@ -98,6 +119,12 @@ try {
   txItems[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
   await sleep(200);
   check('модалка транзакции открылась', document.getElementById('txModal').classList.contains('open'));
+  check('модалка транзакции: шапка с заголовком', document.getElementById('txModalHead').textContent.includes('Операция') || document.getElementById('txModalHead').textContent.includes('Transfer') || document.getElementById('txModalHead').textContent.length > 5, document.getElementById('txModalHead').textContent.slice(0, 40));
+  check('модалка транзакции: участники', document.querySelectorAll('#txModalBody .participant-row').length >= 1, String(document.querySelectorAll('#txModalBody .participant-row').length));
+  check('модалка транзакции: кнопка PDF', !!document.getElementById('txModalPdfBtn'));
+
+  // поп-ап узла
+  check('модалка узла присутствует в DOM', !!document.getElementById('nodeModal'));
 
   // фильтры
   document.getElementById('minAmount').value = '50';

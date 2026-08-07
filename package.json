@@ -12,7 +12,8 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
     "jsdom": "^25.0.0"

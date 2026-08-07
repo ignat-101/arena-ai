@@ -456,31 +456,86 @@ async function loadMore() {
 }
 
 function openTxModal(v) {
+  const head = $('txModalHead');
   const body = $('txModalBody');
   const sp = v.sp || (v.ev.actions && v.ev.actions[0] && v.ev.actions[0].simple_preview) || {};
+  const dirLabel = v.dir === 'in' ? 'Входящий перевод' : v.dir === 'out' ? 'Исходящий перевод' : 'Внутренняя операция';
+  const dirIcon = v.dir === 'in' ? '⬇' : v.dir === 'out' ? '⬆' : '⇄';
+  const dirColor = v.dir === 'in' ? '#3ddc84' : v.dir === 'out' ? '#ff9f43' : '#4f8cff';
+
+  // контрагент
+  let fromAddr = '', toAddr = '', fromName = '', toName = '';
+  const transfers = extractTransfers([v.ev], state.walletRaw);
+  if (transfers.length) {
+    const t = transfers[0];
+    fromAddr = t.from; toAddr = t.to;
+    fromName = t.name_from || (entityByAddress(state.entities, t.from) ? entityByAddress(state.entities, t.from).name : '');
+    toName = t.name_to || (entityByAddress(state.entities, t.to) ? entityByAddress(state.entities, t.to).name : '');
+  } else {
+    const accs = (sp.accounts || []).filter(a => a.address);
+    const other = accs.find(a => a.address !== state.walletRaw) || accs[0];
+    if (other) { toAddr = other.address; toName = other.name || ''; }
+    fromAddr = state.walletRaw;
+  }
+
+  head.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="tx-dir ${v.dir}" style="width:40px;height:40px;font-size:20px;">${dirIcon}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="modal-title">${esc(sp.name || v.type || 'Операция')}</div>
+        <div style="font-size:11.5px;color:var(--text-dim);">${dirLabel} · ${formatTime(v.ev.timestamp)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--mono);font-weight:800;font-size:18px;color:${dirColor};">${esc(sp.value || v.value || '—')}</div>
+        <span class="badge badge-${v.dir}">${esc(dirLabel)}</span>
+      </div>
+    </div>`;
+
   let actionsHtml = '';
   for (const a of (v.ev.actions || [])) {
     const asp = a.simple_preview || {};
+    const accNames = (asp.accounts || []).map(x => x.name || shortAddr(x.address, 6, 4)).join(', ');
     actionsHtml += `
       <div class="tx-item" style="cursor:default;">
-        <div class="tx-dir self" style="font-size:12px;">•</div>
+        <div class="tx-dir self" style="font-size:11px;">⚙</div>
         <div class="tx-main">
           <div class="tx-title">${esc(a.type)} <span class="badge ${a.status === 'ok' ? 'badge-ok' : 'badge-fail'}">${esc(a.status || '')}</span></div>
           <div class="tx-desc">${esc(asp.description || '')}</div>
-          <div class="tx-meta">${asp.accounts ? esc(asp.accounts.map(x => x.name || shortAddr(x.address, 4, 4)).join(', ')) : ''}</div>
+          ${accNames ? `<div class="tx-meta">${esc(accNames)}</div>` : ''}
         </div>
         <div class="tx-value"><div class="v">${esc(asp.value || '')}</div></div>
       </div>`;
   }
+
   body.innerHTML = `
-    <div class="section-title" style="margin-top:0;">Описание</div>
-    <div style="font-size:13.5px;font-weight:700;">${esc(sp.name || v.type || 'Операция')}</div>
-    <div style="color:var(--text-dim);font-size:12.5px;margin:4px 0 10px;">${esc(sp.description || '')}</div>
+    ${(fromAddr || toAddr) ? `
+    <div class="section-title" style="margin-top:0;">Участники</div>
+    <div style="display:grid;gap:8px;">
+      <div class="participant-row">
+        <span class="p-badge" style="background:rgba(255,159,67,.13);color:var(--orange);">из</span>
+        <div style="min-width:0;flex:1;">
+          <div style="font-weight:600;font-size:12.5px;">${esc(fromName || (fromAddr === state.walletRaw ? (state.account && state.account.name) || 'искомый кошелёк' : 'адрес'))}</div>
+          <div class="addr-big">${esc(fromAddr || '—')} ${fromAddr ? `<span class="copy" data-copy="${esc(fromAddr)}">⧉</span>` : ''}</div>
+        </div>
+        ${fromAddr && fromAddr !== state.walletRaw ? `<a class="btn btn-sm" data-explore="${esc(toFriendly(fromAddr, true))}" href="#">Открыть</a>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:11px;">↓</div>
+      <div class="participant-row">
+        <span class="p-badge" style="background:rgba(61,220,132,.13);color:var(--green);">в</span>
+        <div style="min-width:0;flex:1;">
+          <div style="font-weight:600;font-size:12.5px;">${esc(toName || (toAddr === state.walletRaw ? (state.account && state.account.name) || 'искомый кошелёк' : 'адрес'))}</div>
+          <div class="addr-big">${esc(toAddr || '—')} ${toAddr ? `<span class="copy" data-copy="${esc(toAddr)}">⧉</span>` : ''}</div>
+        </div>
+        ${toAddr && toAddr !== state.walletRaw ? `<a class="btn btn-sm" data-explore="${esc(toFriendly(toAddr, true))}" href="#">Открыть</a>` : ''}
+      </div>
+    </div>` : ''}
+    <div class="section-title">Свойства</div>
     <div class="kv">
       <div class="k">Время</div><div>${formatTime(v.ev.timestamp)}</div>
-      <div class="k">Сумма</div><div>${esc(sp.value || v.value || '—')}</div>
+      <div class="k">Сумма</div><div style="font-family:var(--mono);font-weight:700;">${esc(sp.value || v.value || '—')}</div>
       <div class="k">Event ID</div><div class="mono">${esc(shortHash(v.ev.event_id, 10))}</div>
       <div class="k">LT</div><div class="mono">${v.ev.lt ?? '—'}</div>
+      <div class="k">Статус</div><div>${v.ev.in_progress ? 'в обработке' : 'завершено'}</div>
       ${v.hash ? `<div class="k">Tx</div><div class="mono"><a target="_blank" rel="noopener" href="https://tonviewer.com/transaction/${esc(v.hash)}">${esc(shortHash(v.hash, 12))} ↗</a></div>` : ''}
     </div>
     <div class="section-title">Действия (${(v.ev.actions || []).length})</div>
@@ -533,12 +588,14 @@ async function renderAML() {
       </div>`).join('') : '<div style="color:var(--green);font-size:13px;">Явных риск-сигналов не обнаружено</div>'}
     <div class="action-row">
       <button class="btn btn-sm btn-primary" id="openCaseBtn">📋 Открыть AML-кейс</button>
+      <button class="btn btn-sm" id="pdfBtn">📄 Скачать PDF-отчёт</button>
     </div>
     <p style="font-size:10.5px;color:var(--text-faint);margin-top:10px;line-height:1.5;">
       Оценка носит информационный характер и формируется на основе открытых данных TonAPI, базы сущностей и эвристик.
       Не является юридическим заключением.
     </p>
   `;
+  $('pdfBtn').addEventListener('click', () => downloadPdfReport());
   $('openCaseBtn').addEventListener('click', async () => {
     try {
       await backendAdmin('/admin/cases', 'POST', {
@@ -617,6 +674,80 @@ function exportCSV() {
   toast('CSV выгружен', 'success');
 }
 
+// ---------- PDF-отчёт ----------
+function buildPdfPayload() {
+  if (!state.walletRaw) throw new Error('Адрес не загружен');
+  const transfers = extractTransfers(state.events, state.walletRaw);
+  const { counterparties, stats } = aggregateTransfers(transfers, state.walletRaw);
+  const views = state.events.map(eventView);
+  return {
+    reportId: (state.exploredFriendly || state.walletRaw).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40),
+    address: {
+      friendly: state.exploredFriendly || toFriendly(state.walletRaw, true),
+      raw: state.walletRaw,
+      name: (state.account && state.account.name) || '',
+      balance: state.account ? state.account.balance : null,
+      status: state.account ? state.account.status : '',
+      is_scam: !!(state.account && state.account.is_scam),
+      is_wallet: !!(state.account && state.account.is_wallet),
+      interfaces: (state.account && state.account.interfaces) || [],
+      last_activity: state.account ? state.account.last_activity : null,
+    },
+    risk: state.aml ? {
+      score: state.aml.score, level: state.aml.level, level_label: state.aml.level_label,
+      signals: state.aml.signals || [],
+    } : { score: 0, level: 'low', level_label: 'Низкий', signals: [] },
+    stats,
+    entities: (state.aml && state.aml.matched_entities) || [],
+    counterparties: counterparties.slice(0, 40).map(c => ({
+      name: c.name, address: c.address,
+      in_value: c.in_value, out_value: c.out_value,
+      in_count: c.in_count, out_count: c.out_count,
+    })),
+    transactions: views.slice(0, 400).map(v => ({
+      timestamp: v.ev.timestamp, dir: v.dir, type: v.type,
+      description: (v.desc || v.title || ''),
+      value: v.value || '', counterparty: (v.other && (v.other.name || v.other.address)) || '',
+      event_id: v.ev.event_id,
+    })),
+  };
+}
+
+async function downloadPdfReport() {
+  let payload;
+  try {
+    payload = buildPdfPayload();
+  } catch (e) {
+    toast(e.message, 'error');
+    return;
+  }
+  toast('Формируем PDF-отчёт…');
+  try {
+    const res = await fetch('/api/report/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => null);
+      throw new Error((j && j.error) || 'HTTP ' + res.status);
+    }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const name = (state.exploredFriendly || state.walletRaw).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
+    a.download = `aml-report_${name}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast('PDF-отчёт скачан', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Не удалось сформировать PDF: ' + e.message, 'error');
+  }
+}
+
 // ---------- демо ----------
 function loadDemo() {
   const d = getDemoData();
@@ -639,6 +770,7 @@ async function rebuildAll() {
   renderInfoMain();
   renderTxList();
   renderAML();
+  $('pdfToolbarBtn').style.display = state.walletRaw ? 'inline-flex' : 'none';
 }
 
 // ---------- init ----------
@@ -656,6 +788,11 @@ async function init() {
   $('csvBtn').addEventListener('click', exportCSV);
   $('demoBtn').addEventListener('click', loadDemo);
   $('loadMoreBtn').addEventListener('click', loadMore);
+  $('txModalPdfBtn').addEventListener('click', () => {
+    $('txModal').classList.remove('open');
+    downloadPdfReport();
+  });
+  $('pdfToolbarBtn').addEventListener('click', () => downloadPdfReport());
   $('zoomInBtn').addEventListener('click', () => graph && graph.zoomBy(1.3));
   $('zoomOutBtn').addEventListener('click', () => graph && graph.zoomBy(1 / 1.3));
   $('fitBtn').addEventListener('click', () => graph && graph.fitView());
@@ -687,9 +824,10 @@ async function init() {
   // делегирование кликов: копирование / explore
   document.addEventListener('click', (e) => {
     const copyEl = e.target.closest('[data-copy]');
-    if (copyEl) { copyText(copyEl.dataset.copy); return; }
+    if (copyEl) { e.preventDefault(); copyText(copyEl.dataset.copy); return; }
     const exEl = e.target.closest('[data-explore]');
     if (exEl) {
+      e.preventDefault();
       $('addressInput').value = exEl.dataset.explore;
       state.address = exEl.dataset.explore;
       updateUrl();
@@ -699,7 +837,10 @@ async function init() {
 
   // граф
   graph = new ForceGraph($('graphCanvas'), {
-    onSelect: (node) => showNodeDetail(node),
+    onSelect: (node) => {
+      showNodeDetail(node);
+      if (node && !node.isMain) openNodeModal(node);
+    },
     onExplore: (node) => {
       const addr = node.id.startsWith('entity:') ? null : node.id;
       if (addr && addr !== state.walletRaw) {
@@ -777,6 +918,47 @@ function showNodeDetail(node) {
     </div>
     ${node.entity && node.entity.description ? `<div class="section-title">Описание</div><div style="font-size:12.5px;color:var(--text-dim);line-height:1.5;">${esc(node.entity.description)}</div>` : ''}
   `;
+}
+
+// ---------- поп-ап узла графа ----------
+function openNodeModal(node) {
+  if (!node) return;
+  const body = $('nodeModalBody');
+  const raw = node.id.startsWith('entity:') ? null : node.id;
+  const addr = raw || '';
+  const name = node.label || '';
+  const ent = node.entity;
+  const addrCount = ent ? ((state.entities.find(e => e.id === ent.id) || {}).addresses || []).length : 0;
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div style="width:42px;height:42px;border-radius:12px;background:${node.fill || '#3a4a66'};display:flex;align-items:center;justify-content:center;font-size:20px;">${ent ? '🏷' : '👤'}</div>
+      <div style="min-width:0;">
+        <div style="font-weight:700;font-size:16px;">${esc(name)}</div>
+        <div style="font-size:11.5px;color:var(--text-faint);">${esc(node.sublabel || (ent ? (TYPE_LABELS[ent.type] || ent.type) : 'адрес-контрагент'))}</div>
+      </div>
+      ${node.risk ? `<div style="margin-left:auto;text-align:right;"><div class="risk-score" style="font-size:20px;color:${node.risk >= 75 ? 'var(--red)' : node.risk >= 50 ? 'var(--orange)' : 'var(--green)'};">${node.risk}</div><div style="font-size:9.5px;color:var(--text-faint);">риск /100</div></div>` : ''}
+    </div>
+    ${ent ? `<span class="entity-chip">🏷 ${esc(ent.name)} <span class="type">${TYPE_LABELS[ent.type] || ent.type} · риск ${ent.risk_level} · ${esc(ent.status)}</span></span>` : ''}
+    ${ent && ent.description ? `<div style="font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:8px;">${esc(ent.description)}</div>` : ''}
+    <div class="stat-grid" style="margin-top:12px;">
+      <div class="stat-card"><div class="k">Входящие</div><div class="v green">${formatTon(node.inValue)}</div></div>
+      <div class="stat-card"><div class="k">Исходящие</div><div class="v orange">${formatTon(node.outValue)}</div></div>
+      <div class="stat-card"><div class="k">Операций (в/из)</div><div class="v" style="font-size:13px;">${node.inCount} / ${node.outCount}</div></div>
+      <div class="stat-card"><div class="k">Сумма связи</div><div class="v" style="font-size:13px;">${formatTon((node.inValue || 0) + (node.outValue || 0))}</div></div>
+    </div>
+    ${addr ? `
+      <div class="section-title">Адрес</div>
+      <div class="address-box"><span>${esc(addr)}</span><span class="copy" data-copy="${esc(addr)}">⧉</span></div>
+    ` : (ent ? `<div class="section-title">Сущность</div><div style="font-size:12.5px;color:var(--text-dim);">Объединяет ${addrCount} адрес(а/ов) в одном узле графа</div>` : '')}
+    <div class="action-row">
+      ${addr && addr !== state.walletRaw ? `<button class="btn btn-sm btn-primary" data-explore="${esc(toFriendly(addr, true))}">Открыть в графе</button>` : ''}
+      ${addr ? `<a class="btn btn-sm" target="_blank" rel="noopener" href="https://tonviewer.com/${esc(toFriendly(addr, true))}">Tonviewer ↗</a>
+      <a class="btn btn-sm" target="_blank" rel="noopener" href="https://tonapi.io/account/${esc(toFriendly(addr, true))}">TonAPI ↗</a>` : ''}
+      ${ent ? `<a class="btn btn-sm" href="/admin.html" target="_blank">В админке</a>` : ''}
+    </div>
+  `;
+  $('nodeModal').classList.add('open');
 }
 
 // ---------- тултип ----------
